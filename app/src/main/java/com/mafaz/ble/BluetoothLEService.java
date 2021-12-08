@@ -10,12 +10,20 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +41,8 @@ public class BluetoothLEService extends Service {
             "com.app.androidkt.heartratemonitor.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA =
             "com.app.androidkt.heartratemonitor.le.EXTRA_DATA";
+    File folder = new File(Environment.getExternalStorageDirectory()+"/sensordata.csv");
+
 
 
     public final static UUID UUID_BATTERY_LEVEL =
@@ -109,6 +119,8 @@ public class BluetoothLEService extends Service {
             super.onCharacteristicChanged(gatt, characteristic);
             Log.d(TAG, "onCharacteristicChanged");
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+            generateCsvFile(folder.toString(),characteristic);
+
             System.out.println(characteristic+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
         }
@@ -146,6 +158,7 @@ public class BluetoothLEService extends Service {
             Log.d(TAG, "onMtuChanged " + status);
         }
     };
+    private Timestamp timestamp;
 
 
     public BluetoothLEService() {
@@ -238,6 +251,7 @@ public class BluetoothLEService extends Service {
 
     public void setCharacteristicNotification(@NonNull BluetoothGattCharacteristic characteristic, boolean enabled) {
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+
     }
 
     public class LocalBinder extends Binder {
@@ -245,4 +259,44 @@ public class BluetoothLEService extends Service {
             return BluetoothLEService.this;
         }
     }
+
+    public void generateCsvFile(String fileName, BluetoothGattCharacteristic characteristic) {
+
+        FileWriter writer = null;
+
+        try {
+
+            writer = new FileWriter(fileName,true);
+            writer.append("TempValue");
+            writer.append(',');
+            writer.append("time");
+            writer.append('\n');
+
+            writer.append(characteristic.getStringValue(0));
+            writer.append(',');
+            writer.append((timestamp = new Timestamp(System.currentTimeMillis())).toString());
+            writer.append('\n');
+
+           // writer.append("13C");
+           // writer.append(',');
+            //writer.append();
+            //writer.append('\n');
+
+            System.out.println("CSV file is created...");
+            Toast.makeText(this, "CSv file genrated", Toast.LENGTH_SHORT).show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+
 }
