@@ -8,11 +8,11 @@ import java.util.HashMap;
  */
 
 public class SampleGattAttributes {
-    public static final String UUID_BATTERY_SERVICE = "0000ffc6-0000-1000-8000-00805f9b34fb";
-    public static final String UUID_BATTERY_LEVEL_UUID = "0000ffeb-0000-1000-8000-00805f9b34fb";
+   // public static final String UUID_BATTERY_SERVICE = "0000ffc6-0000-1000-8000-00805f9b34fb";
+    //public static final String UUID_BATTERY_LEVEL_UUID = "0000ffeb-0000-1000-8000-00805f9b34fb";
 
-  //  public static final String UUID_BATTERY_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-   // public static final String UUID_BATTERY_LEVEL_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    public static final String UUID_BATTERY_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    public static final String UUID_BATTERY_LEVEL_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
     private static HashMap<String, String> attributes = new HashMap();
 

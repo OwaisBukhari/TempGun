@@ -23,9 +23,19 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
@@ -88,6 +98,7 @@ public class BluetoothLEService extends Service {
             super.onServicesDiscovered(gatt, status);
             Log.d(TAG, "onServicesDiscovered " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
+               // mBluetoothGatt.setCharacteristicNotification,true);
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
                 System.out.println("oooooooooooooooooooooooooooooooooooooooooooooo");
             } else {
@@ -120,6 +131,7 @@ public class BluetoothLEService extends Service {
             Log.d(TAG, "onCharacteristicChanged");
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
             generateCsvFile(folder.toString(),characteristic);
+
 
             System.out.println(characteristic+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
@@ -181,9 +193,11 @@ public class BluetoothLEService extends Service {
 
         if (UUID_BATTERY_LEVEL.equals(characteristic.getUuid())) {
             int format = BluetoothGattCharacteristic.FORMAT_SFLOAT;
-            System.out.println( characteristic.getStringValue(0)+"line17222222222222222222222222222222222222222222222222222222");
+            System.out.println( characteristic.getValue()[1]+"line17222222222222222222222222222222222222222222222222222222");
+           // ArrayList<byte[]> dat=characteristic.get
+            //System.out.println(dat[2]);
 
-            final String battery_level =  characteristic.getStringValue(0);
+            final String battery_level = String.valueOf(characteristic.getValue()[6]);
             intent.putExtra(EXTRA_DATA, battery_level);
         }
         sendBroadcast(intent);
@@ -250,7 +264,15 @@ public class BluetoothLEService extends Service {
     }
 
     public void setCharacteristicNotification(@NonNull BluetoothGattCharacteristic characteristic, boolean enabled) {
-        mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+        System.out.println(characteristic.getUuid()+"setttttttttttttttttttttt");
+       // if(characteristic.getUuid().toString()=="6e400003-b5a3-f393-e0a9-e50e24dcca9e")
+        mBluetoothGatt.setCharacteristicNotification(characteristic, true);
+        //BluetoothGattDescriptor descrip=descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        //mBluetoothGatt.writeDescriptor(descriptor);
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
+                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        mBluetoothGatt.writeDescriptor(descriptor);
 
     }
 
@@ -283,7 +305,8 @@ public class BluetoothLEService extends Service {
             //writer.append('\n');
 
             System.out.println("CSV file is created...");
-            Toast.makeText(this, "CSv file genrated", Toast.LENGTH_SHORT).show();
+
+            uploadFile(folder.toString());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -296,6 +319,45 @@ public class BluetoothLEService extends Service {
             }
         }
     }
+
+
+    public boolean uploadFile(String folder){
+
+        File file=new File(folder);
+        try{
+            RequestBody requestBody=new MultipartBody.Builder().setType(MultipartBody.FORM)
+                    .addFormDataPart("files",file.getName(),RequestBody.create(MediaType.parse("image/*"),file))
+                    .addFormDataPart("some_key","some_value")
+                    .addFormDataPart("submit","submit")
+                    .build();
+
+            Request request=new Request.Builder()
+                    .url("http://"+"10.57.55.18"+"//project/upload.php")
+                    .post(requestBody)
+                    .build();
+
+            OkHttpClient client = new OkHttpClient();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+
+                }
+            });
+            return true;
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
 
 
 

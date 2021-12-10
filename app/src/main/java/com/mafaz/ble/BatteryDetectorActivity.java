@@ -266,6 +266,7 @@ public class BatteryDetectorActivity extends AppCompatActivity {
             }, Constants.SCAN_PERIOD);
             mScanning = true;
             bluetoothLeScanner.startScan(scanFilters, settings, scanCallback);
+
         } else {
             mScanning = false;
             bluetoothLeScanner.stopScan(scanCallback);
@@ -308,17 +309,18 @@ public class BatteryDetectorActivity extends AppCompatActivity {
             if (serviceString != null) {
                 List<BluetoothGattCharacteristic> gattCharacteristics =
                         gattService.getCharacteristics();
-
-                for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                    HashMap<String, String> currentCharaData = new HashMap<String, String>();
-                    uuid = gattCharacteristic.getUuid().toString();
+                System.out.println(gattCharacteristics.get(1).getUuid());
+                //if(gattCharacteristics){
+                  //  HashMap<String, String> currentCharaData = new HashMap<String, String>();
+                    uuid = gattCharacteristics.get(1).getUuid().toString();
+                    System.out.print(uuid);
                     charaString = SampleGattAttributes.lookup(uuid);
                     if (charaString != null) {
                         serviceName.setText(charaString);
                     }
-                    mNotifyCharacteristic = gattCharacteristic;
+                    mNotifyCharacteristic = gattCharacteristics.get(1);
                     return;
-                }
+
             }
         }
     }
