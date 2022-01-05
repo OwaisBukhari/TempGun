@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +60,12 @@ public class BluetoothLEService extends Service {
             UUID.fromString(SampleGattAttributes.UUID_BATTERY_LEVEL_UUID);
 
     private static final String TAG = "BluetoothLEService";
+    private byte[] buf = new byte[20];
+
+    private int bufIndex=0;
+   // private byte[] buf = new byte[20];
+
+
     private static final int STATE_DISCONNECT = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
@@ -79,6 +86,7 @@ public class BluetoothLEService extends Service {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ACTION_GATT_CONNECTED;
                 mConnectionState = STATE_CONNECTED;
+
                 broadcastUpdate(intentAction);
                 Log.i(TAG, "Connected to GATT server.");
 
@@ -112,7 +120,11 @@ public class BluetoothLEService extends Service {
             super.onCharacteristicRead(gatt, characteristic, status);
             Log.d(TAG, "onCharacteristicRead " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+                try {
+                    broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 System.out.println(characteristic+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
             }
@@ -129,7 +141,11 @@ public class BluetoothLEService extends Service {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
             Log.d(TAG, "onCharacteristicChanged");
-            broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+            try {
+                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             generateCsvFile(folder.toString(),characteristic);
 
 
@@ -171,6 +187,7 @@ public class BluetoothLEService extends Service {
         }
     };
     private Timestamp timestamp;
+    private Integer dat;
 
 
     public BluetoothLEService() {
@@ -187,21 +204,69 @@ public class BluetoothLEService extends Service {
         sendBroadcast(intent);
     }
 
-    private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) {
+    private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) throws InterruptedException {
         final Intent intent = new Intent(action);
         System.out.println(characteristic.getUuid()+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
         if (UUID_BATTERY_LEVEL.equals(characteristic.getUuid())) {
-            int format = BluetoothGattCharacteristic.FORMAT_SFLOAT;
+            int format = BluetoothGattCharacteristic.FORMAT_UINT8;
             System.out.println( characteristic.getValue()[1]+"line17222222222222222222222222222222222222222222222222222222");
-           // ArrayList<byte[]> dat=characteristic.get
-            //System.out.println(dat[2]);
 
-            final String battery_level = String.valueOf(characteristic.getValue()[6]);
-            intent.putExtra(EXTRA_DATA, battery_level);
-        }
-        sendBroadcast(intent);
+
+            byte[] value = characteristic.getValue();
+            int i = 0;
+            for (byte b : value) {
+                byte[] bArr = this.buf;
+                bArr[i] = b;
+                System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+bArr[i]+"------"+i);
+
+
+
+                i++;
+
+                if (i == bArr.length) {
+                    System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+bArr);
+                    if(bArr[0]==-86&&bArr[19]==-86 && bArr.length==20){
+                        final String battery_level = String.valueOf(bArr[6]);
+
+                        intent.putExtra(EXTRA_DATA, battery_level);
+                        sendBroadcast(intent);
+                      //  System.out.println("kkkkkkkkkkkkkkk"+bArr[5]);
+                    }
+
+
+                }
+//
+                }
+
+
+            }
+
+/*
+            //System.out.println(characteristic.getValue() + ;);
+            System.out.println(characteristic.getDescriptor(UUID.fromString("00002901-0000-1000-8000-00805f9b34fb")));
+
+            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"+characteristic.getDescriptors().size());
+
+
+
+
+            if(characteristic.getValue()[0]==85 && characteristic.getValue().length>=12 && characteristic.getValue()!=null && characteristic.getValue().length <= 500) {
+                //Log.d("WaveData: " + characteristic.getValue()[0]);
+                //characteristic.wait(100);
+                System.out.println(characteristic.getValue()[3]&255);
+
+
+                final String battery_level = String.valueOf(characteristic.getIntValue(format,4));
+                intent.putExtra(EXTRA_DATA, battery_level);
+            }
+        }*/
+       // sendBroadcast(intent);
     }
+
+
+
+
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -274,6 +339,10 @@ public class BluetoothLEService extends Service {
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         mBluetoothGatt.writeDescriptor(descriptor);
 
+
+
+
+
     }
 
     public class LocalBinder extends Binder {
@@ -332,7 +401,7 @@ public class BluetoothLEService extends Service {
                     .build();
 
             Request request=new Request.Builder()
-                    .url("http://"+"10.57.55.18"+"//project/upload.php")
+                    .url("http://"+"10.57.54.237"+"//project/upload.php")
                     .post(requestBody)
                     .build();
 
