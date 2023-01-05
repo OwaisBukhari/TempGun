@@ -180,6 +180,7 @@ public class BatteryDetectorActivity extends AppCompatActivity {
                     Intent gattServiceIntent = new Intent(BatteryDetectorActivity.this, BluetoothLEService.class);
                     bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+
                 }
             }
         });
@@ -190,11 +191,11 @@ public class BatteryDetectorActivity extends AppCompatActivity {
                 if (mNotifyCharacteristic != null) {
                     final int charaProp = mNotifyCharacteristic.getProperties();
                     if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
-                        mBluetoothLEService.readCharacteristic(mNotifyCharacteristic);
+                        mBluetoothLEService.setCharacteristicNotification(mNotifyCharacteristic,true);
                     }
-                    if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                        mBluetoothLEService.setCharacteristicNotification(mNotifyCharacteristic, true);
-                    }
+//                    if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+//                        mBluetoothLEService.setCharacteristicNotification(mNotifyCharacteristic, true);
+//                    }
                 }
             }
         });
@@ -266,7 +267,6 @@ public class BatteryDetectorActivity extends AppCompatActivity {
             }, Constants.SCAN_PERIOD);
             mScanning = true;
             bluetoothLeScanner.startScan(scanFilters, settings, scanCallback);
-
         } else {
             mScanning = false;
             bluetoothLeScanner.stopScan(scanCallback);
@@ -309,18 +309,17 @@ public class BatteryDetectorActivity extends AppCompatActivity {
             if (serviceString != null) {
                 List<BluetoothGattCharacteristic> gattCharacteristics =
                         gattService.getCharacteristics();
-                System.out.println(gattCharacteristics.get(1).getUuid());
-                //if(gattCharacteristics){
-                  //  HashMap<String, String> currentCharaData = new HashMap<String, String>();
-                    uuid = gattCharacteristics.get(1).getUuid().toString();
-                    System.out.print(uuid);
+
+                for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+                    HashMap<String, String> currentCharaData = new HashMap<String, String>();
+                    uuid = gattCharacteristic.getUuid().toString();
                     charaString = SampleGattAttributes.lookup(uuid);
                     if (charaString != null) {
                         serviceName.setText(charaString);
                     }
-                    mNotifyCharacteristic = gattCharacteristics.get(1);
+                    mNotifyCharacteristic = gattCharacteristic;
                     return;
-
+                }
             }
         }
     }

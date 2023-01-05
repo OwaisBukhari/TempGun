@@ -10,33 +10,14 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Environment;
 import android.os.IBinder;
 
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
@@ -52,20 +33,12 @@ public class BluetoothLEService extends Service {
             "com.app.androidkt.heartratemonitor.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA =
             "com.app.androidkt.heartratemonitor.le.EXTRA_DATA";
-    File folder = new File(Environment.getExternalStorageDirectory()+"/sensordata.csv");
-
 
 
     public final static UUID UUID_BATTERY_LEVEL =
             UUID.fromString(SampleGattAttributes.UUID_BATTERY_LEVEL_UUID);
 
     private static final String TAG = "BluetoothLEService";
-    private byte[] buf = new byte[20];
-
-    private int bufIndex=0;
-   // private byte[] buf = new byte[20];
-
-
     private static final int STATE_DISCONNECT = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
@@ -86,7 +59,6 @@ public class BluetoothLEService extends Service {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ACTION_GATT_CONNECTED;
                 mConnectionState = STATE_CONNECTED;
-
                 broadcastUpdate(intentAction);
                 Log.i(TAG, "Connected to GATT server.");
 
@@ -106,7 +78,6 @@ public class BluetoothLEService extends Service {
             super.onServicesDiscovered(gatt, status);
             Log.d(TAG, "onServicesDiscovered " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
-               // mBluetoothGatt.setCharacteristicNotification,true);
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
                 System.out.println("oooooooooooooooooooooooooooooooooooooooooooooo");
             } else {
@@ -120,11 +91,7 @@ public class BluetoothLEService extends Service {
             super.onCharacteristicRead(gatt, characteristic, status);
             Log.d(TAG, "onCharacteristicRead " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                try {
-                    broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
                 System.out.println(characteristic+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
             }
@@ -141,14 +108,7 @@ public class BluetoothLEService extends Service {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
             Log.d(TAG, "onCharacteristicChanged");
-            try {
-                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            generateCsvFile(folder.toString(),characteristic);
-
-
+            broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
             System.out.println(characteristic+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
         }
@@ -186,8 +146,6 @@ public class BluetoothLEService extends Service {
             Log.d(TAG, "onMtuChanged " + status);
         }
     };
-    private Timestamp timestamp;
-    private Integer dat;
 
 
     public BluetoothLEService() {
@@ -204,69 +162,19 @@ public class BluetoothLEService extends Service {
         sendBroadcast(intent);
     }
 
-    private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) throws InterruptedException {
+    private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
         System.out.println(characteristic.getUuid()+"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
 
         if (UUID_BATTERY_LEVEL.equals(characteristic.getUuid())) {
-            int format = BluetoothGattCharacteristic.FORMAT_UINT8;
-            System.out.println( characteristic.getValue()[1]+"line17222222222222222222222222222222222222222222222222222222");
+            int format = BluetoothGattCharacteristic.FORMAT_SFLOAT;
+            System.out.println( characteristic.getStringValue(0)+"line17222222222222222222222222222222222222222222222222222222");
 
-
-            byte[] value = characteristic.getValue();
-            int i = 0;
-            for (byte b : value) {
-                byte[] bArr = this.buf;
-                bArr[i] = b;
-                System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+bArr[i]+"------"+i);
-
-
-
-                i++;
-
-                if (i == bArr.length) {
-                    System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+bArr);
-                    if(bArr[0]==-86&&bArr[19]==-86 && bArr.length==20){
-                        final String battery_level = String.valueOf(bArr[6]);
-
-                        intent.putExtra(EXTRA_DATA, battery_level);
-                        sendBroadcast(intent);
-                      //  System.out.println("kkkkkkkkkkkkkkk"+bArr[5]);
-                    }
-
-
-                }
-//
-                }
-
-
-            }
-
-/*
-            //System.out.println(characteristic.getValue() + ;);
-            System.out.println(characteristic.getDescriptor(UUID.fromString("00002901-0000-1000-8000-00805f9b34fb")));
-
-            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"+characteristic.getDescriptors().size());
-
-
-
-
-            if(characteristic.getValue()[0]==85 && characteristic.getValue().length>=12 && characteristic.getValue()!=null && characteristic.getValue().length <= 500) {
-                //Log.d("WaveData: " + characteristic.getValue()[0]);
-                //characteristic.wait(100);
-                System.out.println(characteristic.getValue()[3]&255);
-
-
-                final String battery_level = String.valueOf(characteristic.getIntValue(format,4));
-                intent.putExtra(EXTRA_DATA, battery_level);
-            }
-        }*/
-       // sendBroadcast(intent);
+            final String battery_level =  characteristic.getStringValue(0);
+            intent.putExtra(EXTRA_DATA, battery_level);
+        }
+        sendBroadcast(intent);
     }
-
-
-
-
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -329,20 +237,12 @@ public class BluetoothLEService extends Service {
     }
 
     public void setCharacteristicNotification(@NonNull BluetoothGattCharacteristic characteristic, boolean enabled) {
-        System.out.println(characteristic.getUuid()+"setttttttttttttttttttttt");
-       // if(characteristic.getUuid().toString()=="6e400003-b5a3-f393-e0a9-e50e24dcca9e")
-        mBluetoothGatt.setCharacteristicNotification(characteristic, true);
-        //BluetoothGattDescriptor descrip=descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-        //mBluetoothGatt.writeDescriptor(descriptor);
-        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
-                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+        mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        characteristic.addDescriptor(descriptor);
+        characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         mBluetoothGatt.writeDescriptor(descriptor);
-
-
-
-
-
     }
 
     public class LocalBinder extends Binder {
@@ -350,84 +250,4 @@ public class BluetoothLEService extends Service {
             return BluetoothLEService.this;
         }
     }
-
-    public void generateCsvFile(String fileName, BluetoothGattCharacteristic characteristic) {
-
-        FileWriter writer = null;
-
-        try {
-
-            writer = new FileWriter(fileName,true);
-            writer.append("TempValue");
-            writer.append(',');
-            writer.append("time");
-            writer.append('\n');
-
-            writer.append(characteristic.getStringValue(0));
-            writer.append(',');
-            writer.append((timestamp = new Timestamp(System.currentTimeMillis())).toString());
-            writer.append('\n');
-
-           // writer.append("13C");
-           // writer.append(',');
-            //writer.append();
-            //writer.append('\n');
-
-            System.out.println("CSV file is created...");
-
-            uploadFile(folder.toString());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                writer.flush();
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-    public boolean uploadFile(String folder){
-
-        File file=new File(folder);
-        try{
-            RequestBody requestBody=new MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart("files",file.getName(),RequestBody.create(MediaType.parse("image/*"),file))
-                    .addFormDataPart("some_key","some_value")
-                    .addFormDataPart("submit","submit")
-                    .build();
-
-            Request request=new Request.Builder()
-                    .url("http://"+"10.57.54.237"+"//project/upload.php")
-                    .post(requestBody)
-                    .build();
-
-            OkHttpClient client = new OkHttpClient();
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    e.printStackTrace();
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-
-                }
-            });
-            return true;
-        }
-        catch (Exception e){
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-
-
-
-
-
 }

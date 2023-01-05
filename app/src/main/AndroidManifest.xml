@@ -38,7 +38,7 @@
         android:theme="@style/Theme.Ble">
 
         <service
-            android:name="com.mafaz.ble.BluetoothLEService"
+            android:name=".BluetoothLEService"
             android:enabled="true"
             android:exported="true" />
         <activity android:name=".BatteryDetectorActivity">
